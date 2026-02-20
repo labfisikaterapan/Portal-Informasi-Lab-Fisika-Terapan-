@@ -2,274 +2,1056 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Informasi Lab Fisika Terapan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Laboratorium Fisika Terapan - FT UNTIRTA</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            overflow: hidden;
-            background-color: #020617; /* Warna dasar lebih gelap */
+            margin: 0;
+            overflow-x: hidden;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #020205;
+            color: white;
         }
-        #animation-canvas {
+        canvas {
             position: fixed;
             top: 0;
             left: 0;
+            outline: none;
+            z-index: 1;
+        }
+        /* Style untuk Glassmorphism Card */
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+        .glass:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(0, 242, 254, 0.3);
+            transform: translateY(-5px);
+        }
+        
+        /* Layout Sections */
+        .page-section {
+            display: none; /* Default hidden, JS will toggle */
+            min-height: 100vh;
+            position: relative;
+            z-index: 2;
+            padding-top: 100px;
+            padding-bottom: 80px;
+            padding-left: 5%;
+            padding-right: 5%;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Khusus untuk About Us agar Full Screen */
+        #about.page-section {
+            padding: 0 !important;
+            max-width: 100% !important;
+        }
+
+        @media (min-width: 768px) {
+            .page-section {
+                padding-top: 140px;
+                padding-bottom: 100px;
+                padding-left: 10%;
+                padding-right: 10%;
+            }
+            #about.page-section {
+                padding: 0 !important;
+            }
+        }
+        
+        .active-section {
+            display: block;
+        }
+
+        .content-box {
             width: 100%;
-            height: 100%;
-            z-index: -1;
+            max-width: 1200px;
+            margin: 0 auto;
         }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.4); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.6); }
 
-        /* Efek teks gradien animasi (tetap ada, ringan) */
-        .animated-gradient-text {
-            background-image: linear-gradient(90deg, #38bdf8, #a78bfa, #f472b6, #38bdf8);
-            background-size: 250% auto;
+        .gradient-text {
+            background: linear-gradient(135deg, #e0e0e0 0%, #4facfe 100%);
             -webkit-background-clip: text;
-            background-clip: text;
             -webkit-text-fill-color: transparent;
-            animation: gradient-flow 8s linear infinite;
-        }
-        
-        .animated-gradient-background {
-             background-image: linear-gradient(90deg, #38bdf8, #a78bfa, #f472b6, #38bdf8);
-            background-size: 250% auto;
-            animation: gradient-flow 8s linear infinite;
         }
 
-        @keyframes gradient-flow {
-            to { background-position: 250% center; }
+        /* Nav Link Styles */
+        .nav-link {
+            position: relative;
+            cursor: pointer;
+            padding: 8px 0;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background-color: #4facfe;
+            transition: width 0.3s;
+        }
+        .nav-link:hover::after {
+            width: 100%;
         }
 
-        /* EFEK OPTIMASI: Animasi Cahaya Halus pada Teks */
-        @keyframes subtle-glow {
-            0%, 100% { text-shadow: 0 0 4px #38bdf8; }
-            50% { text-shadow: 0 0 10px #a78bfa; }
+        /* Language Dropdown & Mobile Menu */
+        .lang-dropdown, .mobile-menu {
+            display: none;
         }
-        
-        .interactive-text {
-            color: #e0f2fe;
-            transition: color 0.3s ease;
+        .lang-dropdown.show, .mobile-menu.show {
+            display: block;
+            animation: fadeIn 0.2s ease-out;
         }
 
-        .group:hover .interactive-text {
-            animation: subtle-glow 2s ease-in-out infinite;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        
-        /* Animasi Tombol saat diklik dan hover (tetap ada, ringan) */
-        .clickable-item {
-            transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        .clickable-item:hover {
-            transform: translateY(-4px) scale(1.02) !important;
-        }
-        .clickable-item:active {
-            transform: translateY(-1px) scale(0.98) !important;
-        }
-
-        /* Animasi saat elemen muncul di layar (tetap ada, ringan) */
-        .reveal {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        .reveal.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Logo Interaktif (tetap ada, ringan) */
-        .logo-interactive {
-            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.5s ease-in-out;
-        }
-        .logo-interactive:hover {
-            transform: rotate(10deg) scale(1.1);
-            box-shadow: 0 0 30px #38bdf8;
-        }
-
     </style>
 </head>
-<body class="text-slate-200">
-    <canvas id="animation-canvas"></canvas>
-    
-    <main class="relative flex flex-col items-center justify-center w-full h-screen p-4 md:p-6">
-        <!-- EFEK DIHILANGKAN: backdrop-blur-lg dihapus untuk performa -->
-        <div class="main-container w-full max-w-4xl h-full max-h-[95vh] bg-slate-900/90 rounded-2xl border border-slate-700/80 flex flex-col shadow-2xl shadow-sky-900/20">
-            <!-- Header -->
-            <header class="flex flex-col items-center justify-center p-6 text-center border-b border-slate-700 shrink-0">
-                <img src="https://media.licdn.com/dms/image/v2/D560BAQEt9sq9-yvfmQ/company-logo_200_200/company-logo_200_200/0/1664640134738?e=2147483647&v=beta&t=_Gs50mIebI3xDgw0GZmDJ-DbbXIEe19OQy-YMA_IRyk" 
-                     alt="Logo Lab Fisika Terapan" 
-                     class="logo-interactive w-20 h-20 mb-4 rounded-full shadow-lg border-2 border-sky-400/50"
-                     onerror="this.onerror=null;this.src='https://placehold.co/200x200/0f172a/FFFFFF?text=Logo';">
-                <h1 class="text-2xl font-bold tracking-tight md:text-3xl animated-gradient-text">
-                    Portal Informasi Lab Fisika Terapan
-                </h1>
-                <p class="text-sm text-slate-400 md:text-base mt-1">Periode 2025/2026</p>
-            </header>
+<body>
 
-            <!-- Scroll Progress Bar -->
-            <div class="w-full h-1 bg-slate-800/80">
-                <div id="scroll-progress-bar" class="h-full animated-gradient-background" style="width: 0%;"></div>
-            </div>
-
-            <!-- Content Area -->
-            <div id="content-area" class="flex-grow p-4 sm:p-6 overflow-y-auto">
-                
-                <!-- Akses Cepat Section -->
-                <section id="quick-links" class="mb-8">
-                    <h2 class="mb-4 text-lg font-semibold animated-gradient-text">Akses Cepat</h2>
-                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        <!-- Links will be injected here -->
-                    </div>
-                </section>
-
-                <!-- Kontak Asisten Section -->
-                <section id="assistant-contacts">
-                    <h2 class="mb-4 text-lg font-semibold animated-gradient-text">Kontak Asisten</h2>
-                    <div class="space-y-3">
-                        <!-- Assistant contacts will be injected here -->
-                    </div>
-                </section>
-            </div>
-
-            <!-- Footer -->
-            <footer class="p-6 text-center border-t border-slate-700 shrink-0">
-                <div class="flex items-center justify-center space-x-5">
-                    <a href="https://www.instagram.com/lab.fisikaterapan/" target="_blank" rel="noopener noreferrer" class="text-slate-400 transition hover:text-sky-400 clickable-item" title="Instagram"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line></svg></a>
-                    <a href="https://t.me/PraktikumFister" target="_blank" rel="noopener noreferrer" class="text-slate-400 transition hover:text-sky-400 clickable-item" title="Telegram"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg></a>
-                    <a href="https://tinyurl.com/YouTube-LFT" target="_blank" rel="noopener noreferrer" class="text-slate-400 transition hover:text-sky-400 clickable-item" title="YouTube"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"></path><path d="m10 15 5-3-5-3z"></path></svg></a>
-                    <a href="https://www.linkedin.com/company/laboratorium-fisika-terapan" target="_blank" rel="noopener noreferrer" class="text-slate-400 transition hover:text-sky-400 clickable-item" title="LinkedIn"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect width="4" height="12" x="2" y="9"></rect><circle cx="4" cy="4" r="2"></circle></svg></a>
+    <!-- NAVIGASI (Sticky & High Z-Index) -->
+    <nav class="fixed top-0 left-0 w-full p-4 md:p-6 z-50 bg-[#020205]/90 backdrop-blur-md border-b border-white/10 transition-all duration-300">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <!-- LOGO -->
+            <div class="flex items-center gap-3 md:gap-4 cursor-pointer" onclick="switchPage('home')">
+                <img src="https://yt3.ggpht.com/a/AATXAJyIBgk-ZEscn5KCXrkXWGBV_KlljMx5JWUzLg=s900-c-k-c0xffffffff-no-rj-mo" alt="Logo Lab" class="h-8 w-8 md:h-12 md:w-12 rounded-full border border-white/10 shadow-[0_0_15px_rgba(0,242,254,0.3)]">
+                <div class="leading-none">
+                    <span class="block font-black text-base md:text-xl tracking-tight">LAB<span class="text-cyan-500">.</span>FISIKA TERAPAN</span>
+                    <span class="text-[8px] md:text-[10px] font-bold text-gray-400 tracking-[0.2em] block mt-1">FT UNTIRTA</span>
                 </div>
-            </footer>
+            </div>
+
+            <!-- DESKTOP MENU -->
+            <div class="hidden xl:flex items-center gap-6">
+                <div class="flex space-x-6 text-xs font-bold uppercase tracking-widest text-gray-300">
+                    <a onclick="switchPage('home')" class="nav-link hover:text-white transition-colors" data-i18n="nav_home">Beranda</a>
+                    <a onclick="switchPage('about')" class="nav-link hover:text-white transition-colors" data-i18n="nav_about">Tentang Kami</a>
+                    <a onclick="switchPage('activities')" class="nav-link hover:text-white transition-colors" data-i18n="nav_activities">Kegiatan</a>
+                    <a onclick="switchPage('announcements')" class="nav-link hover:text-white transition-colors" data-i18n="nav_announcements">Pengumuman</a>
+                    <a onclick="switchPage('asisten')" class="nav-link hover:text-white transition-colors" data-i18n="nav_asisten">Kontak Asisten</a>
+                    <a onclick="switchPage('struktur')" class="nav-link hover:text-white transition-colors" data-i18n="nav_structure">Struktur Lab</a>
+                </div>
+
+                <!-- LANGUAGE SWITCHER (DESKTOP) -->
+                <div class="relative">
+                    <button id="langBtn" class="flex items-center gap-2 text-xs font-bold text-white border border-white/20 px-3 py-1.5 rounded-full hover:bg-white/10 transition">
+                        <span class="text-base">🌐</span> <span id="currentLangLabel">ID</span> <span class="text-[10px]">▼</span>
+                    </button>
+                    <div id="langDropdown" class="lang-dropdown absolute right-0 mt-2 w-40 bg-[#0a1931] border border-white/10 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl">
+                        <button onclick="setLanguage('id')" class="w-full text-left px-4 py-3 hover:bg-white/10 text-xs font-medium transition flex items-center gap-2">
+                            🇮🇩 Indonesia
+                        </button>
+                        <button onclick="setLanguage('en')" class="w-full text-left px-4 py-3 hover:bg-white/10 text-xs font-medium transition flex items-center gap-2">
+                            🇬🇧 English
+                        </button>
+                        <button onclick="setLanguage('ja')" class="w-full text-left px-4 py-3 hover:bg-white/10 text-xs font-medium transition flex items-center gap-2">
+                            🇯🇵 日本語
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MOBILE BURGER BUTTON -->
+            <button class="xl:hidden text-white p-2 focus:outline-none" onclick="toggleMobileMenu()">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
         </div>
-    </main>
 
-    <script>
-        // --- Data Injection ---
-        const quickLinks = [
-            { title: "File Praktikan Ganjil", href: "http://bit.ly/FilePraktikanPFDGanjil2526", icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />` },
-            { title: "Jadwal & Kelompok", href: "https://bit.ly/JadwalKelompokPFDGanjil2526", icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0h18M-7.5 12h18" />` },
-            { title: "Form Peminjaman Alat", href: "https://bit.ly/FormulirPeminjamanAlatLFT", icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM10.5 16.5h3.75" />` },
-            { title: "Form Surat Bebas", href: "https://forms.gle/qGawqExU2ndWPpnU7", icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25-2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />` },
-            { title: "Ambil Surat Bebas", href: "http://bit.ly/SuratBebasPraktikumFisdas2526", icon: `<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />` },
-            { title: "Channel Telegram", href: "https://t.me/PraktikumFister", icon: `<path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path>` }
-        ];
-        const assistants = [
-            { name: "Agung Boynanda", initial: "AB", link: "https://t.me/agngboy" }, { name: "Ammar Fahmy Almasarie Nahdi", initial: "AF", link: "https://t.me/Ammarnahdi" }, { name: "Ana Mulyana", initial: "AN", link: "https://t.me/anamulyanaa" }, { name: "Angelica Gracia Natalie", initial: "AG", link: "https://t.me/angelicagracianatalie" }, { name: "Aptriyanti Safrina Silivani", initial: "SS", link: "https://t.me/silivani" }, { name: "Arya Mais", initial: "AM", link: "https://t.me/AryaMais" }, { name: "Chindy Astika Putri Silaban", initial: "CY", link: "https://t.me/Chindyastika" }, { name: "Daffa Nur Fauzan", initial: "DF", link: "https://t.me/daffanurfauzan" }, { name: "Dumavina Angelica Kristiani", initial: "DA", link: "https://t.me/dumavinaaaa" }, { name: "Ersita Kartika Putri", initial: "ER", link: "https://t.me/ersitakrtk" }, { name: "Fatjrin Indi Prameswari", initial: "FI", link: "https://t.me/prameswarindi" }, { name: "Harlan Agustiawan", initial: "HA", link: "https://t.me/harlanagustiawan" }, { name: "Indah Lestari", initial: "IL", link: "https://t.me/indaahlestr" }, { name: "Indira Azani Putri", initial: "IA", link: "https://t.me/indiraazani" }, { name: "Irsyad Ahmad", initial: "IR", link: "https://t.me/Markicaad" }, { name: "Ipan Triyuda Pratama", initial: "IT", link: "https://t.me/ipanyuda" }, { name: "Khalishah Fajriani", initial: "KF", link: "https://t.me/khalishahfa" }, { name: "Muhammad Fadhil Atala", initial: "MF", link: "https://t.me/fadhilatala" }, { name: "Muhammad Hikmatul Ilham", initial: "HI", link: "https://t.me/mhikmatulilham" }, { name: "Muhammad Rimal Daniswara", initial: "RD", link: "https://t.me/rimaldaniswara" }, { name: "Muhammad Rivaldy Pratama", initial: "MR", link: "https://t.me/RivaldyPratama" }, { name: "Nazwa Adita Amru", initial: "NA", link: "https://t.me/nazwaadita" }, { name: "Nazwan Naufal Azmi", initial: "NN", link: "https://t.me/nazwannaufal" }, { name: "Oryza Sativa", initial: "OS", link: "https://t.me/oryzative" }, { name: "Rizki Mikael Siregar", initial: "RM", link: "https://t.me/mikaelsrgr" }, { name: "Sofwa Widina", initial: "SW", link: "https://t.me/ofswa" }, { name: "Tabina Huriyah Ramaniya", initial: "TH", link: "https://t.me/hrtbinna" }, { name: "Yolla Dzakya Fathira", initial: "YZ", link: "https://t.me/Yollaaadz" }, { name: "Zidni Ilman", initial: "ZI", link: "https://t.me/zidniilmann" }
-        ];
+        <!-- MOBILE MENU OVERLAY -->
+        <div id="mobileMenu" class="mobile-menu xl:hidden absolute top-full left-0 w-full bg-[#0a1931]/95 backdrop-blur-xl border-t border-white/10 shadow-2xl p-6">
+            <div class="flex flex-col space-y-4 font-bold text-gray-300 text-sm">
+                <a onclick="switchPage('home'); toggleMobileMenu()" class="block py-2 border-b border-white/5 hover:text-cyan-400" data-i18n="nav_home">Beranda</a>
+                <a onclick="switchPage('about'); toggleMobileMenu()" class="block py-2 border-b border-white/5 hover:text-cyan-400" data-i18n="nav_about">Tentang Kami</a>
+                <a onclick="switchPage('activities'); toggleMobileMenu()" class="block py-2 border-b border-white/5 hover:text-cyan-400" data-i18n="nav_activities">Kegiatan</a>
+                <a onclick="switchPage('announcements'); toggleMobileMenu()" class="block py-2 border-b border-white/5 hover:text-cyan-400" data-i18n="nav_announcements">Pengumuman</a>
+                <a onclick="switchPage('asisten'); toggleMobileMenu()" class="block py-2 border-b border-white/5 hover:text-cyan-400" data-i18n="nav_asisten">Kontak Asisten</a>
+                <a onclick="switchPage('struktur'); toggleMobileMenu()" class="block py-2 border-b border-white/5 hover:text-cyan-400" data-i18n="nav_structure">Struktur Lab</a>
+                
+                <div class="pt-4">
+                    <p class="text-[10px] text-gray-500 mb-3 uppercase tracking-widest">Language</p>
+                    <div class="flex gap-2">
+                        <button onclick="setLanguage('id'); toggleMobileMenu()" class="flex-1 py-2 text-xs border border-white/20 rounded hover:bg-white/10">🇮🇩 ID</button>
+                        <button onclick="setLanguage('en'); toggleMobileMenu()" class="flex-1 py-2 text-xs border border-white/20 rounded hover:bg-white/10">🇬🇧 EN</button>
+                        <button onclick="setLanguage('ja'); toggleMobileMenu()" class="flex-1 py-2 text-xs border border-white/20 rounded hover:bg-white/10">🇯🇵 JP</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-        // --- Fungsi UI ---
-        function displayQuickLinks() {
-            const container = document.querySelector('#quick-links .grid');
-            container.innerHTML = quickLinks.map((link, index) => `<a href="${link.href}" target="_blank" rel="noopener noreferrer" class="clickable-item reveal group flex items-center p-3 bg-slate-800/50 hover:bg-slate-700/70 rounded-lg border border-slate-700 hover:border-sky-500/50" style="transition-delay: ${index * 50}ms"><svg class="w-6 h-6 text-sky-400 group-hover:text-sky-300 transition-colors" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">${link.icon}</svg><span class="ml-3 text-sm font-medium interactive-text">${link.title}</span></a>`).join('');
-        }
-        function displayAssistants() {
-            const container = document.querySelector('#assistant-contacts .space-y-3');
-            container.innerHTML = assistants.map((assistant, index) => `<a href="${assistant.link}" target="_blank" rel="noopener noreferrer" class="assistant-card clickable-item reveal group flex items-center p-3 bg-slate-800/50 hover:bg-slate-700/70 rounded-lg border border-transparent hover:border-sky-500/50" style="transition-delay: ${index * 30}ms"><div class="inner-element flex-shrink-0 w-10 h-10 flex items-center justify-center bg-slate-700 group-hover:bg-sky-500 rounded-md font-bold text-sm text-sky-300 group-hover:text-white transition-colors">${assistant.initial}</div><div class="inner-element ml-4 flex-grow"><p class="font-medium text-sm interactive-text">${assistant.name}</p></div><svg class="inner-element w-5 h-5 text-slate-500 group-hover:text-sky-400 transition-transform group-hover:translate-x-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg></a>`).join('');
-        }
-        function setupScrollIndicator() {
-            const contentArea = document.getElementById('content-area');
-            const progressBar = document.getElementById('scroll-progress-bar');
-            contentArea.addEventListener('scroll', () => {
-                const scrollableHeight = contentArea.scrollHeight - contentArea.clientHeight;
-                progressBar.style.width = scrollableHeight > 0 ? `${(contentArea.scrollTop / scrollableHeight) * 100}%` : '0%';
-            });
-        }
-        function setupScrollReveal() {
-            const contentArea = document.getElementById('content-area');
-            const options = { root: contentArea, rootMargin: '0px', threshold: 0.1 };
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
-            }, options);
-            document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-        }
+    <!-- ================= HALAMAN HOME ================= -->
+    <div id="home" class="page-section active-section" style="padding-left: 5%; padding-right: 5%;">
+        <!-- Hero Section -->
+        <div class="content-box flex flex-col justify-center min-h-[50vh] md:min-h-[60vh]">
+            <span class="text-cyan-400 font-bold tracking-[0.3em] text-xs mb-4 block" data-i18n="hero_subtitle">LABORATORIUM PENDIDIKAN</span>
+            <h1 class="text-4xl md:text-8xl font-extrabold mb-6 leading-tight md:leading-none tracking-tighter" data-i18n="hero_title">INOVASI <br><span class="gradient-text">FISIKA.</span></h1>
+            <p class="text-gray-400 text-base md:text-xl mb-10 max-w-lg leading-relaxed" data-i18n="hero_desc">
+                Pusat pengembangan praktikum dan riset fisika terapan Fakultas Teknik Universitas Sultan Ageng Tirtayasa.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                <button onclick="switchPage('asisten')" class="w-full sm:w-auto px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-cyan-400 transition transform hover:scale-105 shadow-lg shadow-cyan-500/20 text-center" data-i18n="btn_contact">
+                    Hubungi Asisten
+                </button>
+                <a href="#akademik-section" class="w-full sm:w-auto px-8 py-3 border border-white/20 font-bold rounded-full hover:bg-white/10 transition backdrop-blur-sm text-center" data-i18n="btn_info">
+                    Info Praktikan
+                </a>
+            </div>
+        </div>
+
+        <!-- Section Akademik -->
+        <div id="akademik-section" class="content-box mt-24 md:mt-32">
+            <h2 class="text-2xl md:text-4xl font-black mb-10 tracking-tighter border-l-4 border-cyan-500 pl-4" data-i18n="header_practicum_data">DATA <span class="text-gray-500">PRAKTIKAN</span></h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Card 1 -->
+                <div class="glass p-6 md:p-8">
+                    <div class="text-cyan-400 text-xs font-bold tracking-widest mb-2" data-i18n="card_drive_label">DRIVE MAP</div>
+                    <h3 class="text-xl md:text-2xl font-bold mb-4" data-i18n="card_drive_title">File & Materi</h3>
+                    <p class="text-gray-400 text-sm mb-6" data-i18n="card_drive_desc">Akses seluruh modul, data pengamatan, dan format laporan praktikum semester genap.</p>
+                    <a href="https://drive.google.com/drive/folders/1GdVtrlelf921w9sy-da8fCuhvm7mQ4EH?usp=drive_link" target="_blank" class="inline-flex items-center text-white font-bold hover:text-cyan-400 transition text-sm">
+                        <span data-i18n="btn_open_drive">BUKA DRIVE</span> <span class="ml-2">↗</span>
+                    </a>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="glass p-6 md:p-8">
+                    <div class="text-cyan-400 text-xs font-bold tracking-widest mb-2" data-i18n="card_schedule_label">TIMELINE</div>
+                    <h3 class="text-xl md:text-2xl font-bold mb-4" data-i18n="card_schedule_title">Jadwal & Kelompok</h3>
+                    <p class="text-gray-400 text-sm mb-6" data-i18n="card_schedule_desc">Informasi pembagian shift praktikum dan kelompok terbaru.</p>
+                    <a href="https://drive.google.com/drive/folders/1_8bR1eLL8YcP5_x15p2r21ai9PsPDNx1?usp=drive_link" target="_blank" class="inline-flex items-center text-white font-bold hover:text-cyan-400 transition text-sm">
+                        <span data-i18n="btn_view_data">LIHAT DATA</span> <span class="ml-2">↗</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Administrasi -->
+        <div class="content-box mt-24 md:mt-32">
+            <h2 class="text-2xl md:text-4xl font-black mb-10 tracking-tighter border-l-4 border-white pl-4" data-i18n="header_admin_service">LAYANAN <span class="text-gray-500">ADMINISTRASI</span></h2>
+            <div class="glass p-6 md:p-10">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div>
+                        <h4 class="font-bold text-lg mb-4 text-cyan-400" data-i18n="subhead_letters">PERSURATAN</h4>
+                        <ul class="space-y-4">
+                            <li>
+                                <a href="http://bit.ly/PengajuanSuratBebasPraktikumFisdas2526" target="_blank" class="block hover:pl-2 transition-all duration-300 border-b border-white/10 pb-2 hover:border-cyan-400 hover:text-cyan-400 text-sm" data-i18n="link_letter_req">
+                                    Pengajuan Surat Bebas Praktikum →
+                                </a>
+                            </li>
+                            <li>
+                                <a href="http://bit.ly/SuratBebasPraktikumFisdas2526" target="_blank" class="block hover:pl-2 transition-all duration-300 border-b border-white/10 pb-2 hover:border-cyan-400 hover:text-cyan-400 text-sm" data-i18n="link_letter_get">
+                                    Ambil Surat Bebas (Drive) →
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-lg mb-4 text-cyan-400" data-i18n="subhead_inventory">INVENTARIS</h4>
+                        <ul class="space-y-4">
+                            <li>
+                                <a href="https://bit.ly/FormulirPeminjamanAlatLFT" target="_blank" class="block hover:pl-2 transition-all duration-300 border-b border-white/10 pb-2 hover:border-cyan-400 hover:text-cyan-400 text-sm" data-i18n="link_tool_loan">
+                                    Formulir Peminjaman Alat →
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= HALAMAN ABOUT US ================= -->
+    <div id="about" class="page-section">
         
-        document.addEventListener('DOMContentLoaded', () => { 
-            displayQuickLinks(); 
-            displayAssistants();
-            setupScrollIndicator();
-            setupScrollReveal();
+        <!-- CONTAINER UTAMA -->
+        <div class="content-box pt-24 md:pt-32 pb-20 px-5 md:px-10">
+            
+            <!-- JUDUL -->
+            <div class="mb-8">
+                <span class="text-cyan-400 font-bold tracking-[0.2em] text-xs md:text-sm mb-2 block uppercase" data-i18n="about_subtitle">PROFIL LABORATORIUM</span>
+                <h1 class="text-4xl md:text-6xl font-black tracking-tighter uppercase leading-tight text-white" data-i18n="about_title">
+                    Tentang Kami
+                </h1>
+            </div>
+
+            <!-- FOTO KEPENGURUSAN (FULL WIDTH & JELAS) -->
+            <div class="w-full mb-12 rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative group">
+                <!-- Gambar ditampilkan apa adanya -->
+                <img src="Foto%20Kepengurusan.jpeg" alt="Foto Kepengurusan Lab Fisika Terapan" class="w-full h-auto object-cover block" onerror="this.style.display='none'">
+                
+                <!-- Overlay tipis -->
+                <div class="absolute inset-0 bg-gradient-to-t from-[#020205] via-transparent to-transparent opacity-60"></div>
+                
+                <div class="absolute bottom-4 left-4 md:bottom-8 md:left-8">
+                    <p class="text-white/80 text-xs md:text-sm font-mono tracking-widest">TIM LABORATORIUM 2025/2026</p>
+                </div>
+            </div>
+
+            <!-- PENJELASAN (TEXT RAPIH) -->
+            <div class="glass p-8 md:p-12 mb-12 bg-[#0a1931]/80 backdrop-blur-xl border-l-4 border-cyan-500">
+                <p class="text-base md:text-lg text-gray-200 leading-relaxed text-left" data-i18n="about_desc">
+                    Laboratorium di Perguruan Tinggi merupakan salah satu komponen yang sangat penting dalam mewujudkan fungsi dari Tridharma Perguruan Tinggi. Laboratorium merupakan sarana bagi mahasiswa dan dosen untuk melakukan kegiatan pendidikan, penelitian dan layanan kepada masyarakat. Laboratorium Fisika Fakultas Teknik Universitas Sultan Ageng Tirtayasa (UNTIRTA) sendiri merupakan laboratorium di bawah naungan Fakultas Teknik UNTIRTA yang mewadahi segala kegiatan terkait bidang fisika guna menjalankan Tridharma Perguruan Tinggi itu sendiri.
+                </p>
+            </div>
+
+            <!-- VISI & MISI GRID -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Visi -->
+                <div class="glass p-8 md:p-12 border-t-4 border-cyan-500 bg-[#0a1931]/60">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="p-3 bg-cyan-500/20 rounded-full text-cyan-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </div>
+                        <h3 class="text-2xl md:text-3xl font-bold text-white" data-i18n="vision_title">VISI</h3>
+                    </div>
+                    <p class="text-base text-gray-300 leading-relaxed text-left" data-i18n="vision_desc">
+                        Menjadikan laboratorium fisika terapan sebagai sarana pengajaran dan pengembangan yang berkualitas serta berintegritas dengan menjunjung tinggi profesionalitas untuk menjadikan mahasiswa yang unggul dan kompeten, sebagai bentuk membantu mewujudkan visi dan misi fakultas teknik Untirta.
+                    </p>
+                </div>
+
+                <!-- Misi -->
+                <div class="glass p-8 md:p-12 border-t-4 border-white bg-[#0a1931]/60">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="p-3 bg-white/10 rounded-full text-white">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                        </div>
+                        <h3 class="text-2xl md:text-3xl font-bold text-white" data-i18n="mission_title">MISI</h3>
+                    </div>
+                    <ul class="space-y-4 text-base text-gray-300 text-left list-none" data-i18n="mission_list">
+                        <li class="flex gap-3"><span class="text-cyan-500 font-bold mt-1">•</span><span>Mendorong budaya kolaboratif dengan meningkatkan inisiatif dan kepedulian antar asisten demi tercapainya kinerja tim yang saling mendukung.</span></li>
+                        <li class="flex gap-3"><span class="text-cyan-500 font-bold mt-1">•</span><span>Menjadi fasilitator yang TOP (tanggungjawab, objektif, dan profesional) dalam berjalannya kegiatan praktikum.</span></li>
+                        <li class="flex gap-3"><span class="text-cyan-500 font-bold mt-1">•</span><span>Menjalin kerja sama dan komunikasi yang baik secara internal maupun eksternal.</span></li>
+                        <li class="flex gap-3"><span class="text-cyan-500 font-bold mt-1">•</span><span>Mendukung kegiatan riset atau penelitian melalui penyediaan fasilitas dan sarana laboratorium yang memadai.</span></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="mt-20 text-center">
+                 <button onclick="switchPage('home')" class="px-8 py-3 border border-white/30 rounded-full text-sm font-bold hover:bg-white hover:text-black transition" data-i18n="btn_back_home">
+                    ← Kembali ke Beranda
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= HALAMAN ACTIVITIES (UPDATED) ================= -->
+    <div id="activities" class="page-section" style="padding-left: 5%; padding-right: 5%;">
+        <div class="content-box">
+            <span class="text-cyan-400 font-bold tracking-[0.2em] text-xs mb-2 block uppercase" data-i18n="activities_subtitle">DOKUMENTASI</span>
+            <h1 class="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-tight mb-8" data-i18n="activities_title">
+                Galeri Kegiatan
+            </h1>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Studi Banding -->
+                <div class="glass p-0 overflow-hidden group rounded-xl">
+                    <div class="w-full relative overflow-hidden">
+                        <img src="Studi%20Banding.jpeg" alt="Studi Banding" class="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                        <div class="absolute inset-0 flex items-center justify-center text-gray-600 font-bold bg-gray-900" style="display: none;">
+                            <span data-i18n="img_placeholder">Foto Kegiatan</span>
+                        </div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-bold text-xl mb-2 group-hover:text-cyan-400 transition" data-i18n="act_title_1">Studi Banding Institusi</h3>
+                        <p class="text-sm text-gray-400 mb-4 text-left leading-relaxed" data-i18n="act_desc_1">Pertukaran wawasan manajerial dan operasional dengan laboratorium universitas lain untuk peningkatan mutu.</p>
+                        <span class="text-[10px] bg-white/10 px-2 py-1 rounded text-cyan-300">2026</span>
+                    </div>
+                </div>
+
+                <!-- Sosialisasi Praktikum -->
+                <div class="glass p-0 overflow-hidden group rounded-xl">
+                    <div class="w-full relative overflow-hidden">
+                        <img src="Sosialisasi%20Praktikum.jpeg" alt="Sosialisasi Praktikum" class="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                        <div class="absolute inset-0 flex items-center justify-center text-gray-600 font-bold bg-gray-900" style="display: none;">
+                            <span data-i18n="img_placeholder">Foto Kegiatan</span>
+                        </div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-bold text-xl mb-2 group-hover:text-cyan-400 transition" data-i18n="act_title_2">Sosialisasi & Orientasi</h3>
+                        <p class="text-sm text-gray-400 mb-4 text-left leading-relaxed" data-i18n="act_desc_2">Pemaparan alur, tata tertib, dan prosedur keselamatan kerja (K3) praktikum kepada praktikan.</p>
+                        <span class="text-[10px] bg-white/10 px-2 py-1 rounded text-cyan-300">2026</span>
+                    </div>
+                </div>
+
+                <!-- Asistensi Praktikum -->
+                <div class="glass p-0 overflow-hidden group rounded-xl">
+                    <div class="w-full relative overflow-hidden">
+                        <img src="Asistensi.jpeg" alt="Asistensi Praktikum" class="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                        <div class="absolute inset-0 flex items-center justify-center text-gray-600 font-bold bg-gray-900" style="display: none;">
+                            <span data-i18n="img_placeholder">Foto Kegiatan</span>
+                        </div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-bold text-xl mb-2 group-hover:text-cyan-400 transition" data-i18n="act_title_3">Asistensi & Mentoring</h3>
+                        <p class="text-sm text-gray-400 mb-4 text-left leading-relaxed" data-i18n="act_desc_3">Pendampingan intensif materi dan teknis percobaan untuk menunjang pemahaman mahasiswa.</p>
+                        <span class="text-[10px] bg-white/10 px-2 py-1 rounded text-cyan-300">2026</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-12 text-center">
+                <button onclick="switchPage('home')" class="px-6 py-2 border border-white/30 rounded-full text-sm font-bold hover:bg-white hover:text-black transition" data-i18n="btn_back_home">
+                   ← Kembali ke Beranda
+               </button>
+           </div>
+        </div>
+    </div>
+
+    <!-- ================= HALAMAN ANNOUNCEMENTS ================= -->
+    <div id="announcements" class="page-section" style="padding-left: 5%; padding-right: 5%;">
+        <div class="content-box">
+            <span class="text-cyan-400 font-bold tracking-[0.2em] text-xs mb-2 block uppercase" data-i18n="announcements_subtitle">INFORMASI TERBARU</span>
+            <h1 class="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-tight mb-8" data-i18n="announcements_title">
+                Papan Pengumuman
+            </h1>
+
+            <div class="space-y-6 max-w-3xl">
+                <!-- Announcement Item 1 -->
+                <div class="glass p-6 border-l-4 border-cyan-500 hover:bg-white/5 transition">
+                    <span class="text-xs text-gray-500 font-mono mb-2 block">10 Feb 2026</span>
+                    <h3 class="text-xl font-bold text-white mb-2" data-i18n="ann_title_1">Jadwal Responsi Modul 1</h3>
+                    <p class="text-gray-400 text-sm" data-i18n="ann_desc_1">Responsi untuk modul pertama akan dilaksanakan minggu depan. Harap persiapkan diri.</p>
+                </div>
+
+                <!-- Announcement Item 2 -->
+                <div class="glass p-6 border-l-4 border-white hover:bg-white/5 transition">
+                    <span class="text-xs text-gray-500 font-mono mb-2 block">05 Feb 2026</span>
+                    <h3 class="text-xl font-bold text-white mb-2" data-i18n="ann_title_2">Penerimaan Asisten Baru</h3>
+                    <p class="text-gray-400 text-sm" data-i18n="ann_desc_2">Open recruitment untuk asisten laboratorium periode genap telah dibuka. Silakan cek detail di Instagram.</p>
+                </div>
+
+                <!-- Announcement Item 3 -->
+                <div class="glass p-6 border-l-4 border-gray-700 hover:bg-white/5 transition opacity-70">
+                    <span class="text-xs text-gray-500 font-mono mb-2 block">20 Jan 2026</span>
+                    <h3 class="text-xl font-bold text-white mb-2" data-i18n="ann_title_3">Libur Operasional Lab</h3>
+                    <p class="text-gray-400 text-sm" data-i18n="ann_desc_3">Laboratorium akan tutup sementara selama masa libur semester.</p>
+                </div>
+            </div>
+
+            <div class="mt-12 text-center sm:text-left">
+                <button onclick="switchPage('home')" class="px-6 py-2 border border-white/30 rounded-full text-sm font-bold hover:bg-white hover:text-black transition" data-i18n="btn_back_home">
+                   ← Kembali ke Beranda
+               </button>
+           </div>
+        </div>
+    </div>
+
+    <!-- ================= HALAMAN LAB STRUCTURE ================= -->
+    <div id="struktur" class="page-section" style="padding-left: 5%; padding-right: 5%;">
+         <div class="content-box">
+            <span class="text-cyan-400 font-bold tracking-[0.2em] text-xs mb-2 block uppercase" data-i18n="struct_subtitle">ORGANISASI</span>
+            <h1 class="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-tight mb-12" data-i18n="struct_title">
+                Struktur Organisasi <br>Laboratorium
+            </h1>
+            <!-- Content Struktur (sama seperti sebelumnya, tidak diubah layoutnya) -->
+            <div class="flex flex-col items-center gap-8 relative">
+                <!-- Level 1: Kepala Lab -->
+                <div class="glass p-6 md:p-8 text-center border-t-4 border-cyan-500 w-full max-w-md z-10 relative">
+                    <div class="w-16 h-16 bg-gradient-to-br from-cyan-600 to-blue-900 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl font-bold shadow-lg shadow-cyan-500/20">K</div>
+                    <h3 class="font-bold text-lg md:text-xl uppercase text-white mb-1" data-i18n="role_head">Kepala Laboratorium</h3>
+                    <p class="text-cyan-400 font-bold text-sm md:text-base">Dr. Irma Saraswati S.Si., M.T.</p>
+                </div>
+                <!-- Vertical Line -->
+                <div class="w-1 h-8 bg-white/20"></div>
+                <!-- Level 2: Koordinator -->
+                <div class="glass p-6 text-center border-t-4 border-white w-full max-w-sm z-10 relative">
+                    <div class="w-12 h-12 bg-gray-700 rounded-full mx-auto mb-3 flex items-center justify-center text-lg font-bold">KA</div>
+                    <h3 class="font-bold text-base md:text-lg uppercase text-white mb-1" data-i18n="role_coord">Koordinator Asisten</h3>
+                    <p class="text-gray-300 font-semibold text-sm">Nazwan Naufal A.</p>
+                </div>
+                <!-- Vertical Line -->
+                <div class="w-1 h-8 bg-white/20"></div>
+                <!-- Level 3 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 w-full max-w-4xl z-10 relative">
+                    <div class="glass p-6 border-l-4 border-yellow-500">
+                        <h4 class="text-yellow-500 font-bold tracking-widest text-xs mb-4 uppercase" data-i18n="role_secretary">SEKRETARIS</h4>
+                        <ul class="space-y-3 text-sm">
+                            <li class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs">OS</div><span>Oryza Sativa</span></li>
+                            <li class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs">KF</div><span>Khalishah Fajriani</span></li>
+                        </ul>
+                    </div>
+                    <div class="glass p-6 border-l-4 border-green-500">
+                        <h4 class="text-green-500 font-bold tracking-widest text-xs mb-4 uppercase" data-i18n="role_treasurer">BENDAHARA</h4>
+                        <ul class="space-y-3 text-sm">
+                            <li class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs">TR</div><span>Tabina H Ramaniya</span></li>
+                            <li class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs">AS</div><span>Aptriyanti S. Silivani</span></li>
+                        </ul>
+                    </div>
+                </div>
+                 <!-- Vertical Line -->
+                <div class="w-1 h-8 bg-white/20"></div>
+                <!-- Level 4 -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full z-10 relative">
+                     <div class="glass p-6 border-t-4 border-blue-500 h-full">
+                        <div class="mb-4">
+                            <h4 class="text-blue-400 font-bold tracking-widest text-xs uppercase mb-1" data-i18n="role_div_practicum">DIVISI PRAKTIKUM</h4>
+                            <span class="text-[10px] text-gray-500 uppercase" data-i18n="role_head_div">KEPALA DIVISI</span>
+                            <div class="font-bold text-base md:text-lg mt-1">Rimal Daniswara</div>
+                        </div>
+                        <div class="w-full h-[1px] bg-white/10 mb-4"></div>
+                        <span class="text-[10px] text-gray-500 uppercase block mb-3" data-i18n="role_member">ANGGOTA</span>
+                        <ul class="space-y-2 text-sm text-gray-300">
+                            <li>Dumavina Angelica K.</li>
+                            <li>Nazwa Adita Amru</li>
+                            <li>Sofwa Widina</li>
+                            <li>Angelica Gracia Natalie</li>
+                            <li>Arya Mais</li>
+                            <li>Daffa Nur Fauzan</li>
+                            <li>Zidni Ilman</li>
+                            <li>Fatjrin Indi Prameswari</li>
+                        </ul>
+                    </div>
+                     <div class="glass p-6 border-t-4 border-purple-500 h-full">
+                        <div class="mb-4">
+                            <h4 class="text-purple-400 font-bold tracking-widest text-xs uppercase mb-1" data-i18n="role_div_dev">DIVISI PENGEMBANGAN</h4>
+                            <span class="text-[10px] text-gray-500 uppercase" data-i18n="role_head_div">KEPALA DIVISI</span>
+                            <div class="font-bold text-base md:text-lg mt-1">Ersita Kartika Putri</div>
+                        </div>
+                        <div class="w-full h-[1px] bg-white/10 mb-4"></div>
+                        <span class="text-[10px] text-gray-500 uppercase block mb-3" data-i18n="role_member">ANGGOTA</span>
+                        <ul class="space-y-2 text-sm text-gray-300">
+                            <li>Indah Lestari</li>
+                            <li>Rizki Mikael Siregar</li>
+                            <li>Yolla Dzakya Fathira</li>
+                            <li>Ana Mulyana</li>
+                            <li>Chindy Astika P. Silaban</li>
+                            <li>Harlan Agustiawan</li>
+                            <li>Muhammad Rivaldy Pratama</li>
+                        </ul>
+                    </div>
+                    <div class="glass p-6 border-t-4 border-orange-500 h-full">
+                        <div class="mb-4">
+                            <h4 class="text-orange-400 font-bold tracking-widest text-xs uppercase mb-1" data-i18n="role_div_equip">DIVISI PERALATAN</h4>
+                            <span class="text-[10px] text-gray-500 uppercase" data-i18n="role_head_div">KEPALA DIVISI</span>
+                            <div class="font-bold text-base md:text-lg mt-1">Ipan Triyuda P.</div>
+                        </div>
+                        <div class="w-full h-[1px] bg-white/10 mb-4"></div>
+                        <span class="text-[10px] text-gray-500 uppercase block mb-3" data-i18n="role_member">ANGGOTA</span>
+                        <ul class="space-y-2 text-sm text-gray-300">
+                            <li>Indira Azani Putri</li>
+                            <li>Agung Boynanda</li>
+                            <li>Ammar Fahmy A. Nahdi</li>
+                            <li>Muhammad Hikmatul Ilham</li>
+                            <li>Irsyad Ahmad</li>
+                            <li>Muhammad Fadhil Atala</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-12">
+                <button onclick="switchPage('home')" class="px-6 py-2 border border-white/30 rounded-full text-sm font-bold hover:bg-white hover:text-black transition" data-i18n="btn_back_home">← Kembali ke Beranda</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= HALAMAN CONTACT ASSISTANT ================= -->
+    <div id="asisten" class="page-section" style="padding-left: 5%; padding-right: 5%;">
+        <div class="content-box text-center mb-12">
+            <span class="text-cyan-400 font-bold tracking-[0.2em] text-xs mb-2 block uppercase" data-i18n="assistant_subtitle">Direktori Personil</span>
+            <h1 class="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-tight" data-i18n="assistant_title">
+                Kontak Asisten <br>Lab Fisika Terapan
+            </h1>
+            <p class="text-gray-400 mt-4 font-mono text-sm" data-i18n="assistant_period">PERIODE 2025/2026</p>
+        </div>
+        <!-- Grid Container -->
+        <div class="content-box">
+            <div id="assistant-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+        </div>
+        <div class="text-center mt-12">
+            <button onclick="switchPage('home')" class="px-6 py-2 border border-white/30 rounded-full text-sm font-bold hover:bg-white hover:text-black transition" data-i18n="btn_back_home">← Kembali ke Beranda</button>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer id="footer" class="relative z-10 bg-[#020205] border-t border-white/10 pt-16 pb-8 mt-20">
+        <div class="content-box px-5">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+                <div class="col-span-1 md:col-span-2">
+                    <div class="flex items-center gap-3 mb-6">
+                        <img src="https://yt3.ggpht.com/a/AATXAJyIBgk-ZEscn5KCXrkXWGBV_KlljMx5JWUzLg=s900-c-k-c0xffffffff-no-rj-mo" class="h-10 w-10 grayscale opacity-70">
+                        <span class="font-bold tracking-tight">LAB FISIKA TERAPAN</span>
+                    </div>
+                    <p class="text-gray-500 text-sm leading-relaxed max-w-md" data-i18n="footer_desc">Mewujudkan lingkungan praktikum yang profesional, inovatif, dan relevan dengan perkembangan teknologi industri masa kini.</p>
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold text-white uppercase tracking-widest mb-6" data-i18n="footer_social">Sosial Media</h4>
+                    <ul class="space-y-4 text-sm text-gray-400">
+                        <!-- Instagram -->
+                        <li>
+                            <a href="https://www.instagram.com/lab.fisikaterapan?igsh=MWM0ZnJlN3JoMXpjbQ==" target="_blank" class="flex items-center gap-3 hover:text-white transition group">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                                <span>Instagram</span>
+                            </a>
+                        </li>
+                        <!-- Telegram -->
+                        <li>
+                            <a href="https://t.me/PraktikumFister" target="_blank" class="flex items-center gap-3 hover:text-white transition group">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 11.944 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                                <span>Telegram Channel</span>
+                            </a>
+                        </li>
+                        <!-- YouTube -->
+                        <li>
+                            <a href="https://tinyurl.com/YouTube-LFT" target="_blank" class="flex items-center gap-3 hover:text-white transition group">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+                                <span>YouTube</span>
+                            </a>
+                        </li>
+                        <!-- LinkedIn -->
+                        <li>
+                            <a href="https://www.linkedin.com/company/laboratorium-fisika-terapan" target="_blank" class="flex items-center gap-3 hover:text-white transition group">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M4.98 3.5c0 1.381-1.11 2.5-2.48 2.5s-2.48-1.119-2.48-2.5c0-1.38 1.11-2.5 2.48-2.5s2.48 1.12 2.48 2.5zm.02 4.5h-5v16h5v-16zm7.982 0h-4.968v16h5v-8.306c0-4.613 5.432-5.185 5.432 0v8.306h5v-10.5c0-5.352-5.19-5.039-8.655-1.829z"/></svg>
+                                <span>LinkedIn</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold text-white uppercase tracking-widest mb-6" data-i18n="footer_location">Lokasi</h4>
+                    <p class="text-sm text-gray-500 leading-relaxed">Jl. Jend. Sudirman No.20, RT.10/RW.5, Cipocok Jaya, Kota Serang, Banten 42434</p>
+                </div>
+            </div>
+            <div class="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-gray-600">
+                <p>&copy; 2026 Laboratorium Fisika Terapan FT UNTIRTA</p>
+                <p>Designed with Lunar Core UI</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Three.js & Logic Script -->
+    <script>
+        // === 1. LOGIC BAHASA (I18N) ===
+        const translations = {
+            id: {
+                nav_home: "Beranda",
+                nav_about: "Tentang Kami",
+                nav_activities: "Kegiatan",
+                nav_announcements: "Pengumuman",
+                nav_asisten: "Kontak Asisten",
+                nav_structure: "Struktur Lab",
+                hero_subtitle: "LABORATORIUM PENDIDIKAN",
+                hero_title: "INOVASI <br><span class=\"gradient-text\">FISIKA.</span>",
+                hero_desc: "Pusat pengembangan praktikum dan riset fisika terapan Fakultas Teknik Universitas Sultan Ageng Tirtayasa.",
+                btn_contact: "Hubungi Asisten",
+                btn_info: "Info Praktikan",
+                header_practicum_data: "DATA <span class=\"text-gray-500\">PRAKTIKAN</span>",
+                card_drive_label: "DRIVE MAP",
+                card_drive_title: "File & Materi",
+                card_drive_desc: "Akses seluruh modul, data pengamatan, dan format laporan praktikum semester genap.",
+                btn_open_drive: "BUKA DRIVE",
+                card_schedule_label: "TIMELINE",
+                card_schedule_title: "Jadwal & Kelompok",
+                card_schedule_desc: "Informasi pembagian shift praktikum dan kelompok terbaru.",
+                btn_view_data: "LIHAT DATA",
+                header_admin_service: "LAYANAN <span class=\"text-gray-500\">ADMINISTRASI</span>",
+                subhead_letters: "PERSURATAN",
+                link_letter_req: "Pengajuan Surat Bebas Praktikum →",
+                link_letter_get: "Ambil Surat Bebas (Drive) →",
+                subhead_inventory: "INVENTARIS",
+                link_tool_loan: "Formulir Peminjaman Alat →",
+                about_subtitle: "PROFIL LABORATORIUM",
+                about_title: "Tentang Kami",
+                about_desc: "Laboratorium di Perguruan Tinggi merupakan salah satu komponen yang sangat penting dalam mewujudkan fungsi dari Tridharma Perguruan Tinggi. Laboratorium merupakan sarana bagi mahasiswa dan dosen untuk melakukan kegiatan pendidikan, penelitian dan layanan kepada masyarakat. Laboratorium Fisika Fakultas Teknik Universitas Sultan Ageng Tirtayasa (UNTIRTA) sendiri merupakan laboratorium di bawah naungan Fakultas Teknik UNTIRTA yang mewadahi segala kegiatan terkait bidang fisika guna menjalankan Tridharma Perguruan Tinggi itu sendiri.",
+                vision_title: "VISI",
+                vision_desc: "Menjadikan laboratorium fisika terapan sebagai sarana pengajaran dan pengembangan yang berkualitas serta berintegritas dengan menjunjung tinggi profesionalitas untuk menjadikan mahasiswa yang unggul dan kompeten, sebagai bentuk membantu mewujudkan visi dan misi fakultas teknik Untirta.",
+                mission_title: "MISI",
+                mission_list: `
+                    <li class="flex gap-3"><span class="text-cyan-500 font-bold mt-1">•</span><span>Mendorong budaya kolaboratif dengan meningkatkan inisiatif dan kepedulian antar asisten demi tercapainya kinerja tim yang saling mendukung.</span></li>
+                    <li class="flex gap-3"><span class="text-cyan-500 font-bold mt-1">•</span><span>Menjadi fasilitator yang TOP (tanggungjawab, objektif, dan profesional) dalam berjalannya kegiatan praktikum.</span></li>
+                    <li class="flex gap-3"><span class="text-cyan-500 font-bold mt-1">•</span><span>Menjalin kerja sama dan komunikasi yang baik secara internal maupun eksternal.</span></li>
+                    <li class="flex gap-3"><span class="text-cyan-500 font-bold mt-1">•</span><span>Mendukung kegiatan riset atau penelitian melalui penyediaan fasilitas dan sarana laboratorium yang memadai.</span></li>
+                `,
+                activities_subtitle: "DOKUMENTASI",
+                activities_title: "Galeri Kegiatan",
+                act_title_1: "Studi Banding Institusi",
+                act_desc_1: "Pertukaran wawasan manajerial dan operasional dengan laboratorium universitas lain untuk peningkatan mutu.",
+                act_title_2: "Sosialisasi & Orientasi",
+                act_desc_2: "Pemaparan alur, tata tertib, dan prosedur keselamatan kerja (K3) praktikum kepada praktikan.",
+                act_title_3: "Asistensi & Mentoring",
+                act_desc_3: "Pendampingan intensif materi dan teknis percobaan untuk menunjang pemahaman mahasiswa.",
+                img_placeholder: "Foto Kegiatan",
+                announcements_subtitle: "INFORMASI TERBARU",
+                announcements_title: "Papan Pengumuman",
+                ann_title_1: "Jadwal Responsi Modul 1",
+                ann_desc_1: "Responsi untuk modul pertama akan dilaksanakan minggu depan. Harap persiapkan diri.",
+                ann_title_2: "Penerimaan Asisten Baru",
+                ann_desc_2: "Open recruitment untuk asisten laboratorium periode genap telah dibuka. Silakan cek detail di Instagram.",
+                ann_title_3: "Libur Operasional Lab",
+                ann_desc_3: "Laboratorium akan tutup sementara selama masa libur semester.",
+                btn_back_home: "← Kembali ke Beranda",
+                struct_subtitle: "ORGANISASI",
+                struct_title: "Struktur Organisasi <br>Laboratorium",
+                role_head: "Kepala Laboratorium",
+                role_head_desc: "Dosen Pembimbing Utama",
+                role_coord: "Koordinator Asisten",
+                role_coord_desc: "Penanggung Jawab Operasional",
+                role_secretary: "SEKRETARIS",
+                role_treasurer: "BENDAHARA",
+                role_div_practicum: "DIVISI PRAKTIKUM",
+                role_div_dev: "DIVISI PENGEMBANGAN",
+                role_div_equip: "DIVISI PERALATAN",
+                role_head_div: "KEPALA DIVISI",
+                role_member: "ANGGOTA",
+                assistant_subtitle: "Direktori Personil",
+                assistant_title: "Kontak Asisten <br>Lab Fisika Terapan",
+                assistant_period: "PERIODE 2025/2026",
+                footer_desc: "Mewujudkan lingkungan praktikum yang profesional, inovatif, dan relevan dengan perkembangan teknologi industri masa kini.",
+                footer_social: "Sosial Media",
+                footer_location: "Lokasi"
+            },
+            en: {
+                nav_home: "Home",
+                nav_about: "About Us",
+                nav_activities: "Activities",
+                nav_announcements: "Announcements",
+                nav_asisten: "Contact Assistant",
+                nav_structure: "Lab Structure",
+                hero_subtitle: "EDUCATIONAL LABORATORY",
+                hero_title: "PHYSICS <br><span class=\"gradient-text\">INNOVATION.</span>",
+                hero_desc: "Center for applied physics practicum and research, Faculty of Engineering, Sultan Ageng Tirtayasa University.",
+                btn_contact: "Contact Assistant",
+                btn_info: "Practicum Info",
+                header_practicum_data: "PRACTICUM <span class=\"text-gray-500\">DATA</span>",
+                card_drive_label: "DRIVE MAP",
+                card_drive_title: "Files & Materials",
+                card_drive_desc: "Access all modules, observation data, and practicum report formats for the even semester.",
+                btn_open_drive: "OPEN DRIVE",
+                card_schedule_label: "TIMELINE",
+                card_schedule_title: "Schedule & Groups",
+                card_schedule_desc: "Information on practicum shifts and the latest group divisions.",
+                btn_view_data: "VIEW DATA",
+                header_admin_service: "ADMINISTRATION <span class=\"text-gray-500\">SERVICES</span>",
+                subhead_letters: "CORRESPONDENCE",
+                link_letter_req: "Practicum Exemption Letter Request →",
+                link_letter_get: "Get Exemption Letter (Drive) →",
+                subhead_inventory: "INVENTORY",
+                link_tool_loan: "Equipment Loan Form →",
+                about_subtitle: "LABORATORY PROFILE",
+                about_title: "About Us",
+                about_desc: "Laboratories in Higher Education are one of the very important components in realizing the function of the Tri Dharma of Higher Education. The laboratory is a means for students and lecturers to carry out educational activities, research, and service to the community. The Applied Physics Laboratory of the Faculty of Engineering, Sultan Ageng Tirtayasa University (UNTIRTA) itself is a laboratory under the auspices of the Faculty of Engineering UNTIRTA which accommodates all activities related to the field of physics in order to carry out the Tri Dharma of Higher Education itself.",
+                vision_title: "VISION",
+                vision_desc: "To make the applied physics laboratory a quality and integrated teaching and development facility by upholding high professionalism to create superior and competent students, as a form of helping to realize the vision and mission of the Untirta Faculty of Engineering.",
+                mission_title: "MISSION",
+                mission_list: `
+                    <li class="flex gap-3"><span class="text-cyan-500 font-bold mt-1">•</span><span>Encouraging a collaborative culture by increasing initiative and care among assistants to achieve mutually supporting team performance.</span></li>
+                    <li class="flex gap-3"><span class="text-cyan-500 font-bold mt-1">•</span><span>Becoming a TOP facilitator (responsible, objective, and professional) in the running of practicum activities.</span></li>
+                    <li class="flex gap-3"><span class="text-cyan-500 font-bold mt-1">•</span><span>Establishing good cooperation and communication both internally and externally.</span></li>
+                    <li class="flex gap-3"><span class="text-cyan-500 font-bold mt-1">•</span><span>Supporting research activities through the provision of adequate laboratory facilities and infrastructure.</span></li>
+                `,
+                activities_subtitle: "DOCUMENTATION",
+                activities_title: "Activity Gallery",
+                act_title_1: "Institutional Benchmarking",
+                act_desc_1: "Managerial and operational insight exchange with other university labs for quality improvement.",
+                act_title_2: "Socialization & Orientation",
+                act_desc_2: "Explanation of flows, regulations, and safety procedures (OHS) to practicum students.",
+                act_title_3: "Assistance & Mentoring",
+                act_desc_3: "Intensive material and technical experiment assistance to support student understanding.",
+                img_placeholder: "Activity Photo",
+                announcements_subtitle: "LATEST UPDATES",
+                announcements_title: "Announcement Board",
+                ann_title_1: "Module 1 Response Schedule",
+                ann_desc_1: "Response for the first module will be held next week. Please prepare yourself.",
+                ann_title_2: "New Assistant Recruitment",
+                ann_desc_2: "Open recruitment for even period lab assistants is open. Check details on Instagram.",
+                ann_title_3: "Lab Operational Holiday",
+                ann_desc_3: "The laboratory will be temporarily closed during the semester break.",
+                btn_back_home: "← Back to Home",
+                struct_subtitle: "ORGANIZATION",
+                struct_title: "Organizational <br>Structure",
+                role_head: "Head of Laboratory",
+                role_head_desc: "Main Supervisor Lecturer",
+                role_coord: "Assistant Coordinator",
+                role_coord_desc: "Daily Operations Lead",
+                role_secretary: "SECRETARY",
+                role_treasurer: "TREASURER",
+                role_div_practicum: "PRACTICUM DIVISION",
+                role_div_dev: "DEVELOPMENT DIVISION",
+                role_div_equip: "EQUIPMENT DIVISION",
+                role_head_div: "HEAD OF DIVISION",
+                role_member: "MEMBERS",
+                assistant_subtitle: "Personnel Directory",
+                assistant_title: "Contact Assistant <br>Applied Physics Lab",
+                assistant_period: "PERIOD 2025/2026",
+                footer_desc: "Realizing a professional, innovative practicum environment relevant to current industrial technology developments.",
+                footer_social: "Social Media",
+                footer_location: "Location"
+            },
+            ja: {
+                nav_home: "ホーム",
+                nav_about: "私たちについて",
+                nav_activities: "活動",
+                nav_announcements: "お知らせ",
+                nav_asisten: "アシスタントへの連絡",
+                nav_structure: "ラボの体制",
+                hero_subtitle: "教育研究所",
+                hero_title: "物理学の <br><span class=\"gradient-text\">革新。</span>",
+                hero_desc: "スルタン・アグン・ティルタヤサ大学工学部 応用物理学の実習および研究センター。",
+                btn_contact: "アシスタントに連絡",
+                btn_info: "実習情報",
+                header_practicum_data: "実習 <span class=\"text-gray-500\">データ</span>",
+                card_drive_label: "ドライブマップ",
+                card_drive_title: "ファイルと資料",
+                card_drive_desc: "偶数学期のすべてのモジュール、観測データ、および実習レポートの形式にアクセスします。",
+                btn_open_drive: "ドライブを開く",
+                card_schedule_label: "タイムライン",
+                card_schedule_title: "スケジュールとグループ",
+                card_schedule_desc: "実習シフトと最新のグループ分けに関する情報。",
+                btn_view_data: "データを見る",
+                header_admin_service: "管理 <span class=\"text-gray-500\">サービス</span>",
+                subhead_letters: "通信",
+                link_letter_req: "実習免除申請書 →",
+                link_letter_get: "免除通知書の取得 (Drive) →",
+                subhead_inventory: "在庫",
+                link_tool_loan: "機器貸出フォーム →",
+                about_subtitle: "ラボのプロフィール",
+                about_title: "私たちについて",
+                about_desc: "高等教育機関における実験室は、高等教育の三つの使命（教育、研究、社会奉仕）を実現するための非常に重要な要素の一つです。実験室は、学生や講師が教育活動、研究、および地域社会への奉仕を行うための手段です。スルタン・アグン・ティルタヤサ大学（UNTIRTA）工学部の物理学実験室自体は、UNTIRTA工学部の傘下にある実験室であり、高等教育の三つの使命を遂行するために物理学分野に関連するすべての活動を行っています。",
+                vision_title: "ビジョン",
+                vision_desc: "応用物理学実験室を、高い専門性を維持し、優秀で有能な学生を育成するための質が高く誠実な教育・開発の場とし、Untirta工学部のビジョンとミッションの実現を支援する。",
+                mission_title: "ミッション",
+                mission_list: `
+                    <li class="flex gap-3"><span class="text-cyan-500 font-bold mt-1">•</span><span>相互に支え合うチームパフォーマンスを達成するために、アシスタント間の主導権と思いやりを高め、協力的な文化を奨励する。</span></li>
+                    <li class="flex gap-3"><span class="text-cyan-500 font-bold mt-1">•</span><span>実習活動の運営において、TOP（責任感、客観性、専門性）なファシリテーターとなる。</span></li>
+                    <li class="flex gap-3"><span class="text-cyan-500 font-bold mt-1">•</span><span>内部および外部との良好な協力関係とコミュニケーションを確立する。</span></li>
+                    <li class="flex gap-3"><span class="text-cyan-500 font-bold mt-1">•</span><span>適切な実験室の設備とインフラの提供を通じて、研究活動を支援する。</span></li>
+                `,
+                activities_subtitle: "ドキュメンテーション",
+                activities_title: "活動ギャラリー",
+                act_title_1: "施設比較研究 (ベンチマーク)",
+                act_desc_1: "品質向上のための他大学の研究室との管理的および運営的洞察の交換。",
+                act_title_2: "実習オリエンテーション",
+                act_desc_2: "実習生への流れ、規則、および安全手順（OHS）の説明。",
+                act_title_3: "実習指導・メンタリング",
+                act_desc_3: "学生の理解を支援するための集中的な教材および実験技術の指導。",
+                img_placeholder: "活動写真",
+                announcements_subtitle: "最新情報",
+                announcements_title: "掲示板",
+                ann_title_1: "モジュール1のレスポンシスケジュール",
+                ann_desc_1: "最初のモジュールのレスポンシは来週行われます。準備してください。",
+                ann_title_2: "新アシスタント募集",
+                ann_desc_2: "偶数期ラボアシスタントの公開募集を開始しました。詳細はInstagramを確認してください。",
+                ann_title_3: "ラボ運営休止",
+                ann_desc_3: "学期休みのため、実験室は一時的に閉鎖されます。",
+                btn_back_home: "← ホームに戻る",
+                struct_subtitle: "組織",
+                struct_title: "ラボの <br>組織図",
+                role_head: "実験室長",
+                role_head_desc: "応用物理学実験室 主任指導教員",
+                role_coord: "アシスタントコーディネーター",
+                role_coord_desc: "日常業務および実習責任者",
+                role_secretary: "書記",
+                role_treasurer: "会計",
+                role_div_practicum: "実習部門",
+                role_div_dev: "開発部門",
+                role_div_equip: "機器部門",
+                role_head_div: "部門長",
+                role_member: "メンバー",
+                assistant_subtitle: "人名簿",
+                assistant_title: "アシスタント連絡先 <br>応用物理学ラボ",
+                assistant_period: "2025/2026年度",
+                footer_desc: "今日の産業技術の発展に関連した、専門的で革新的な実習環境を実現します。",
+                footer_social: "ソーシャルメディア",
+                footer_location: "所在地"
+            }
+        };
+
+        // Logic Toggle Mobile Menu
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('show');
+        }
+
+        // Logic Toggle Desktop Language Dropdown
+        const langBtn = document.getElementById('langBtn');
+        const langDropdown = document.getElementById('langDropdown');
+
+        langBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            langDropdown.classList.toggle('show');
         });
 
-        // --- SKRIP ANIMASI BARU YANG DIOPTIMALKAN ---
-        const canvas = document.getElementById('animation-canvas');
-        const ctx = canvas.getContext('2d');
-        let particles = [];
-        let mouse = { x: null, y: null, radius: 150 };
+        // Close dropdowns when clicking outside
+        window.addEventListener('click', () => {
+            if (langDropdown.classList.contains('show')) {
+                langDropdown.classList.remove('show');
+            }
+            // Optional: Close mobile menu on click outside content
+        });
 
-        class Particle {
-            constructor() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 2 + 1;
-                this.speedX = Math.random() * 1 - 0.5;
-                this.speedY = Math.random() * 1 - 0.5;
-                this.color = 'rgba(56, 189, 248, 0.5)';
-            }
-            update() {
-                if (this.x > canvas.width || this.x < 0) this.speedX = -this.speedX;
-                if (this.y > canvas.height || this.y < 0) this.speedY = -this.speedY;
-                this.x += this.speedX;
-                this.y += this.speedY;
-            }
-            draw() {
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-
-        function init() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            particles = [];
-            let numberOfParticles = (canvas.width * canvas.height) / 15000;
-            for (let i = 0; i < numberOfParticles; i++) {
-                particles.push(new Particle());
-            }
-        }
-
-        function connect() {
-            let opacityValue = 1;
-            for (let a = 0; a < particles.length; a++) {
-                for (let b = a; b < particles.length; b++) {
-                    let distance = Math.sqrt(
-                        (particles[a].x - particles[b].x) * (particles[a].x - particles[b].x) +
-                        (particles[a].y - particles[b].y) * (particles[a].y - particles[b].y)
-                    );
-                    if (distance < 100) {
-                        opacityValue = 1 - (distance / 100);
-                        ctx.strokeStyle = `rgba(167, 139, 250, ${opacityValue})`;
-                        ctx.lineWidth = 1;
-                        ctx.beginPath();
-                        ctx.moveTo(particles[a].x, particles[a].y);
-                        ctx.lineTo(particles[b].x, particles[b].y);
-                        ctx.stroke();
-                    }
+        function setLanguage(lang) {
+            // Update Label Desktop
+            document.getElementById('currentLangLabel').innerText = lang.toUpperCase();
+            
+            // Update Text Elements
+            const elements = document.querySelectorAll('[data-i18n]');
+            elements.forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang][key]) {
+                    el.innerHTML = translations[lang][key];
                 }
+            });
+
+            // Close dropdowns
+            langDropdown.classList.remove('show');
+        }
+
+        // Set default language on load
+        window.addEventListener('DOMContentLoaded', () => {
+            setLanguage('id'); // Force default to Indonesian
+        });
+
+        // === 2. LOGIC HALAMAN (SPA Switcher) ===
+        function switchPage(pageId) {
+            document.querySelectorAll('.page-section').forEach(el => {
+                el.classList.remove('active-section');
+            });
+            const target = document.getElementById(pageId);
+            if(target) {
+                target.classList.add('active-section');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
 
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            particles.forEach(p => { p.update(); p.draw(); });
-            connect();
-            requestAnimationFrame(animate);
+        // === 3. GENERATE ASSISTANT DATA ===
+        const assistants = [
+            { name: "Ana Mulyana", code: "AN", link: "t.me/anamulyanaa" },
+            { name: "Oryza Sativa", code: "OS", link: "t.me/oryzative" },
+            { name: "Ersita Kartika Putri", code: "ER", link: "t.me/ersitakrtk" },
+            { name: "Ipan Triyuda Pratama", code: "IT", link: "t.me/ipanyuda" },
+            { name: "Harlan Agustiawan", code: "HA", link: "t.me/harlanagustiawan" },
+            { name: "Daffa Nur Fauzan", code: "DF", link: "t.me/daffanurfauzan" },
+            { name: "Angelica Gracia Natalie", code: "AG", link: "t.me/angelicagracianatalie" },
+            { name: "Sofwa Widina", code: "SW", link: "t.me/ofswa" },
+            { name: "Muhammad Fadhil Atala", code: "MF", link: "t.me/fadhilatala" },
+            { name: "Rizki Mikael Siregar", code: "RM", link: "t.me/mikaelsrgr" },
+            { name: "Nazwa Adita Amru", code: "NA", link: "t.me/nazwaadita" },
+            { name: "Muhammad Rimal Daniswara", code: "RD", link: "t.me/rimaldaniswara" },
+            { name: "Chindy Astika Putri Silaban", code: "CY", link: "t.me/Chindyastika" },
+            { name: "Muhammad Hikmatul Ilham", code: "HI", link: "t.me/mhikmatulilham" },
+            { name: "Nazwan Naufal Azmi", code: "NN", link: "t.me/nazwannaufal" },
+            { name: "Khalishah Fajriani", code: "KF", link: "t.me/khalishahfa" },
+            { name: "Indira Azani Putri", code: "IA", link: "t.me/indiraazani" },
+            { name: "Aptriyanti Safrina Silivani", code: "SS", link: "t.me/silivani" },
+            { name: "Ammar Fahmy Almasarie Nahdi", code: "AF", link: "t.me/Ammarnahdi" },
+            { name: "Yolla Dzakya Fathira", code: "YA", link: "t.me/Yollaaadz" },
+            { name: "Irsyad Ahmad", code: "IR", link: "t.me/Markicaad" },
+            { name: "Muhammad Rivaldy Pratama", code: "MR", link: "t.me/RivaldyPratama" },
+            { name: "Agung Boynanda", code: "AB", link: "t.me/agngboy" },
+            { name: "Tabina Huriyah Ramaniya", code: "TH", link: "t.me/hrtbinna" },
+            { name: "Dumavina Angelica Kristiani", code: "DA", link: "t.me/dumavinaaaa" },
+            { name: "Fatjrin Indi Prameswari", code: "FI", link: "t.me/prameswarindi" },
+            { name: "Indah Lestari", code: "IL", link: "t.me/indaahlestr" },
+            { name: "Arya Mais", code: "AM", link: "t.me/AryaMais" },
+            { name: "Zidni Ilman", code: "ZI", link: "t.me/zidniilmann" }
+        ];
+
+        assistants.sort((a, b) => a.name.localeCompare(b.name));
+
+        const gridContainer = document.getElementById('assistant-grid');
+        function formatTelegramLink(link) {
+            let cleanLink = link.trim();
+            if (!cleanLink.startsWith('http')) {
+                return 'https://' + cleanLink;
+            }
+            return cleanLink;
         }
 
-        window.addEventListener('resize', init);
-        
-        init();
+        assistants.forEach(asst => {
+            const card = document.createElement('div');
+            card.className = 'glass p-5 flex items-center justify-between group hover:bg-white/5 transition-colors';
+            card.innerHTML = `
+                <div class="flex items-center gap-4">
+                    <div class="h-12 w-12 rounded-full bg-gradient-to-br from-gray-800 to-black border border-white/10 flex items-center justify-center font-bold text-cyan-400 text-lg shadow-inner">
+                        ${asst.code}
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-sm md:text-base group-hover:text-cyan-300 transition">${asst.name}</h3>
+                        <span class="text-[10px] text-gray-500 font-mono tracking-wider">KODE: ${asst.code}</span>
+                    </div>
+                </div>
+                <a href="${formatTelegramLink(asst.link)}" target="_blank" class="h-8 w-8 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-400 hover:bg-blue-600 hover:text-white transition-all transform hover:scale-110" title="Chat Telegram">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 11.944 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                </a>
+            `;
+            gridContainer.appendChild(card);
+        });
+
+        // === 4. THREE.JS BACKGROUND ===
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.5); 
+        scene.add(ambientLight);
+        const mainLight = new THREE.DirectionalLight(0xffffff, 2);
+        mainLight.position.set(5, 3, 5);
+        scene.add(mainLight);
+        const blueLight = new THREE.PointLight(0x00f2fe, 1, 20);
+        blueLight.position.set(-5, -2, -2);
+        scene.add(blueLight);
+        const lunarGroup = new THREE.Group();
+        scene.add(lunarGroup);
+        const moonGeo = new THREE.SphereGeometry(1.5, 64, 64);
+        const moonMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8, metalness: 0.1 });
+        const moon = new THREE.Mesh(moonGeo, moonMat);
+        lunarGroup.add(moon);
+        const craterGeo = new THREE.IcosahedronGeometry(1.51, 15);
+        const craterMat = new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true, transparent: true, opacity: 0.05 });
+        const craterOverlay = new THREE.Mesh(craterGeo, craterMat);
+        moon.add(craterOverlay);
+        const satelliteGeo = new THREE.SphereGeometry(0.1, 16, 16);
+        const satelliteMat = new THREE.MeshStandardMaterial({ color: 0x4facfe, emissive: 0x4facfe, emissiveIntensity: 2 });
+        const satellite = new THREE.Mesh(satelliteGeo, satelliteMat);
+        lunarGroup.add(satellite);
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsCount = 4000;
+        const starPositions = new Float32Array(starsCount * 3);
+        for(let i=0; i < starsCount * 3; i++) { starPositions[i] = (Math.random() - 0.5) * 50; }
+        starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+        const starsMaterial = new THREE.PointsMaterial({ size: 0.015, color: 0xffffff, transparent: true, opacity: 0.8 });
+        const starField = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(starField);
+        camera.position.z = 5;
+        let mouseX = 0, mouseY = 0;
+        window.addEventListener('mousemove', (e) => { mouseX = (e.clientX / window.innerWidth) - 0.5; mouseY = (e.clientY / window.innerHeight) - 0.5; });
+        const clock = new THREE.Clock();
+        const animate = () => {
+            const time = clock.getElapsedTime();
+            moon.rotation.y = time * 0.1;
+            satellite.position.x = Math.cos(time * 0.8) * 2.5;
+            satellite.position.z = Math.sin(time * 0.8) * 2.5;
+            satellite.position.y = Math.sin(time * 0.4) * 0.5;
+            lunarGroup.rotation.x += (mouseY * 0.2 - lunarGroup.rotation.x) * 0.05;
+            lunarGroup.rotation.y += (mouseX * 0.2 - lunarGroup.rotation.y) * 0.05;
+            camera.position.x = Math.sin(time * 0.1) * 0.5;
+            camera.position.y = Math.cos(time * 0.1) * 0.5;
+            camera.lookAt(lunarGroup.position);
+            starField.rotation.y = time * 0.02;
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        };
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
         animate();
     </script>
 </body>
 </html>
-
-
